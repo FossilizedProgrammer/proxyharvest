@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -352,40 +351,3 @@ func sourceForHost(host string) Source {
 	return generic
 }
 
-func loadSiteHosts(path string) ([]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var hosts []string
-	seen := map[string]bool{}
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		fields := strings.Fields(line)
-		if len(fields) == 0 {
-			continue
-		}
-		host := strings.TrimRight(fields[0], "،,.;:()[]")
-		host = strings.TrimPrefix(host, "https://")
-		host = strings.TrimPrefix(host, "http://")
-		if i := strings.IndexByte(host, '/'); i >= 0 {
-			host = host[:i]
-		}
-		if i := strings.IndexByte(host, ':'); i >= 0 {
-			host = host[:i]
-		}
-		host = strings.TrimPrefix(strings.ToLower(host), "www.")
-		if host == "" || seen[host] {
-			continue
-		}
-		seen[host] = true
-		hosts = append(hosts, host)
-	}
-	if len(hosts) == 0 {
-		return nil, fmt.Errorf("%s contains no sites", path)
-	}
-	return hosts, nil
-}

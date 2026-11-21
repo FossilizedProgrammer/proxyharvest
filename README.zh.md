@@ -2,7 +2,7 @@
 
 **语言：** [فارسی](README.md) · [English](README.en.md) · [Русский](README.ru.md) · [Español](README.es.md) · [中文](README.zh.md)
 
-Go 命令行工具：从 `sites` 文件中列出的网站收集免费代理，通过你的直连真实测试并按速度排序。
+Go 命令行工具：从代码内置的网站注册表中收集免费代理，通过你的直连真实测试并按速度排序。
 
 Linux 与 Windows（amd64/arm64）的静态二进制发布在 [Releases](https://github.com/FossilizedProgrammer/proxyharvest/releases) 页面 — 由 GitHub 通过 Actions 从本源码自动构建。
 
@@ -69,7 +69,6 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o proxyharvest .
 
 | 选项 | 默认 | 说明 |
 |---|---|---|
-| `-sites` | `sites` | 包含网站地址的文件（每行一个域名） |
 | `-country` | 全部 | 仅收集/测试该国家 |
 | `-exclude-countries` | `IR,RU,CN,KP` | 完全不使用这些国家的代理（`none` — 关闭） |
 | `-types` | `http,socks4,socks5` | 代理类型 |
@@ -97,7 +96,7 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o proxyharvest .
 
 ## 工作原理
 
-1. 从 `sites` 文件读取域名。对未知域名也用通用 `IP:PORT` 提取器检查其主页。
+1. 域名来自 **代码内置的注册表** — 不需要任何外部文件。
 2. 所有来源并行下载 — 直接下载（或经 `-upstream` 如果配置）。不可达的来源会用从其他来源收集到的可用代理重试；`-no-retry` 跳过该阶段。
 3. 代理 **只从直连** 测试一次（没有任何中间代理参与测试）；仅建立经过被测代理自身的连接。
 4. 死亡或不可达的代理被完全丢弃。

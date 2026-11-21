@@ -2,7 +2,7 @@
 
 **Languages:** [فارسی](README.md) · [Русский](README.ru.md) · [Español](README.es.md) · [中文](README.zh.md) · [English](README.en.md)
 
-A Go command-line tool that harvests free proxies from the websites listed in the `sites` file, really tests them from your direct connection and sorts them by speed.
+A Go command-line tool that harvests free proxies from the site registry built into the code, really tests them from your direct connection and sorts them by speed.
 
 Static binaries for Linux and Windows (amd64/arm64) are published on the [Releases](https://github.com/FossilizedProgrammer/proxyharvest/releases) page — GitHub builds them via Actions from this same source.
 
@@ -69,7 +69,6 @@ Separate the addresses with commas; if the scheme is omitted `https://` is assum
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `-sites` | `sites` | file with the site addresses (one domain per line) |
 | `-country` | all | only that country |
 | `-exclude-countries` | `IR,RU,CN,KP` | proxies from these countries are never used (`none` — disable) |
 | `-types` | `http,socks4,socks5` | proxy types |
@@ -97,7 +96,7 @@ Phases: `downloading source lists` → `checking harvested proxies` → `recover
 
 ## How it works
 
-1. The domains are read from the `sites` file. For unknown domains the main page is also checked with the generic `IP:PORT` extractor.
+1. The domains come from the **registry built into the code** — no external file is needed.
 2. All sources are downloaded in parallel — directly (or through `-upstream` when set). An unreachable source is retried through the healthy proxies harvested from other sources; with `-no-retry` this step is skipped.
 3. The proxies are tested once and **from the direct connection** (no intermediate proxy takes part in the test); the only connection established is through the proxy under test.
 4. Dead and unreachable proxies are dropped completely.

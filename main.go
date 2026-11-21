@@ -18,7 +18,6 @@ import (
 )
 
 type options struct {
-	sites        string
 	country      string
 	types        string
 	concurrency  int
@@ -52,7 +51,6 @@ func main() {
 
 func run() error {
 	var opts options
-	flag.StringVar(&opts.sites, "sites", "sites", "file containing proxy-list site addresses")
 	flag.StringVar(&opts.country, "country", "", "only collect/test proxies from this ISO country code (e.g. US, DE, IR)")
 	flag.StringVar(&opts.types, "types", "http,socks4,socks5", "comma-separated proxy types: http, https, socks4, socks5")
 	flag.IntVar(&opts.concurrency, "c", 100, "parallel proxy tests")
@@ -122,14 +120,11 @@ func run() error {
 	defer prog.stop()
 	log.SetOutput(prog.LogWriter())
 
-	hosts, err := loadSiteHosts(opts.sites)
-	if err != nil {
-		return fmt.Errorf("reading sites file: %w", err)
-	}
-	sources := make([]Source, 0, len(hosts))
+	// منابع از رجیستری داخل کد می‌آیند — فایل sites دیگر وجود ندارد و
+	// برای شروع کار به هیچ فایلی نیاز نیست.
+	sources := make([]Source, 0, len(registry))
 	seenSources := map[string]bool{}
-	for _, host := range hosts {
-		src := sourceForHost(host)
+	for _, src := range registry {
 		if seenSources[src.Key] {
 			continue
 		}

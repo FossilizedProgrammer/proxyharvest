@@ -2,7 +2,7 @@
 
 **Idiomas:** [فارسی](README.md) · [English](README.en.md) · [Русский](README.ru.md) · [Español](README.es.md) · [中文](README.zh.md)
 
-Herramienta de línea de comandos en Go para recopilar proxies gratuitos de los sitios listados en el archivo `sites`, probarlos realmente desde tu conexión directa y ordenarlos por velocidad.
+Herramienta de línea de comandos en Go para recopilar proxies gratuitos del registro interno de sitios (en el código), probarlos realmente desde tu conexión directa y ordenarlos por velocidad.
 
 Binarios estáticos para Linux y Windows (amd64/arm64) publicados en la página de [Releases](https://github.com/FossilizedProgrammer/proxyharvest/releases) — el propio GitHub los compila mediante Actions desde este mismo código.
 
@@ -69,7 +69,6 @@ Separa las direcciones con comas; si no indicas el esquema se asume `https://`. 
 
 | Flag | Predeterminado | Descripción |
 |---|---|---|
-| `-sites` | `sites` | archivo con las direcciones de los sitios (un dominio por línea) |
 | `-country` | todos | solo ese país |
 | `-exclude-countries` | `IR,RU,CN,KP` | los proxies de estos países no se usan nunca (`none` — desactivar) |
 | `-types` | `http,socks4,socks5` | tipos de proxy |
@@ -97,7 +96,7 @@ Fases: `downloading source lists` → `checking harvested proxies` → `recoveri
 
 ## Cómo funciona
 
-1. Los dominios se leen del archivo `sites`. Para dominios desconocidos también se revisa la página principal con el extractor genérico `IP:PORT`.
+1. Los dominios provienen del **registro interno en el código** — no se necesita ningún archivo externo.
 2. Todas las fuentes se descargan en paralelo — directamente (o vía `-upstream` si está configurado). Un fuente inaccesible se reintenta a través de los proxies sanos recogidos de las otras fuentes; con `-no-retry` este paso se omite.
 3. Los proxies se prueban **desde la conexión directa** (ningún proxy intermedio interviene); solo se establece la conexión a través del propio proxy bajo prueba.
 4. Los proxies muertos o inalcanzables se descartan por completo.
