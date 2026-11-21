@@ -1,0 +1,10 @@
+# Build output
+proxyharvest
+proxyharvest.exe
+dist/
+
+# Tool output files (harvest results — local artifacts)
+proxies.txt
+proxies-*.txt
+us.txt
+*.tmp
