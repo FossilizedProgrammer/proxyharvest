@@ -250,7 +250,7 @@ func freeproxyWorldRequests(country string, _ TypeSet) []Request {
 	}}
 }
 
-// Registry lists every provider named in the sites file.
+// Registry lists every built-in provider; no external sites file is needed.
 var registry = []Source{
 	{
 		Key:  "free-proxy-list.net",
