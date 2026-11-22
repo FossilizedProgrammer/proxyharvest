@@ -142,7 +142,7 @@ func verifySites(ctx context.Context, results []Result, targets []string, timeou
 	}
 
 	labels := strings.Join(siteLabels(targets), ", ")
-	prog.set("checking required sites", fmt.Sprintf("0/%d proxies against %s", len(results), labels))
+	prog.setProgress("checking required sites", 0, int64(len(results)), "0 can open "+labels)
 
 	var (
 		mu        sync.Mutex
@@ -175,7 +175,7 @@ func verifySites(ctx context.Context, results []Result, targets []string, timeou
 			mu.Lock()
 			ok := len(passed)
 			mu.Unlock()
-			prog.set("checking required sites", fmt.Sprintf("%d/%d checked, %d can open all", n, len(results), ok))
+			prog.setProgress("checking required sites", n, int64(len(results)), fmt.Sprintf("%d can open %s", ok, labels))
 		}(result)
 	}
 	wg.Wait()

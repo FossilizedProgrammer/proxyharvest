@@ -20,6 +20,7 @@ type status struct {
 	mu         sync.Mutex
 	label      string
 	detail     string
+	lastEvent  string
 	phaseStart time.Time
 	frame      int
 	lastLen    int
@@ -55,8 +56,48 @@ func (s *status) set(label, detail string) {
 	if label != s.label {
 		s.label = label
 		s.phaseStart = time.Now()
+		// The previous phase's last event no longer describes what is running.
+		s.lastEvent = ""
 	}
 	s.detail = detail
+	s.mu.Unlock()
+}
+
+// setProgress updates the detail line with done/total counts, the completion
+// percentage, the observed rate and an ETA, so a long phase shows measurable
+// movement instead of just a number that occasionally changes.
+func (s *status) setProgress(label string, done, total int64, extra string) {
+	s.mu.Lock()
+	start := s.phaseStart
+	if label != s.label || start.IsZero() {
+		start = time.Now()
+	}
+	elapsed := time.Since(start)
+	s.mu.Unlock()
+
+	detail := fmt.Sprintf("%d/%d", done, total)
+	if total > 0 {
+		detail += fmt.Sprintf(" (%d%%)", done*100/total)
+	}
+	if done > 0 && elapsed >= time.Second {
+		rate := float64(done) / elapsed.Seconds()
+		detail += fmt.Sprintf(", %.1f/s", rate)
+		if total > done && rate > 0 {
+			eta := time.Duration(float64(total-done)/rate) * time.Second
+			detail += ", ETA " + eta.Round(time.Second).String()
+		}
+	}
+	if extra != "" {
+		detail += ", " + extra
+	}
+	s.set(label, detail)
+}
+
+// note records the most recent notable event (a source that answered, a working
+// proxy) so the progress line shows what is happening right now.
+func (s *status) note(event string) {
+	s.mu.Lock()
+	s.lastEvent = event
 	s.mu.Unlock()
 }
 
@@ -110,7 +151,7 @@ func (s *status) render() {
 	}
 	frame := frames[s.frame%len(frames)]
 	s.frame++
-	label, detail := s.label, s.detail
+	label, detail, lastEvent := s.label, s.detail, s.lastEvent
 	elapsed := time.Since(s.phaseStart).Truncate(time.Second)
 	s.mu.Unlock()
 
@@ -119,6 +160,12 @@ func (s *status) render() {
 		line += ": " + detail
 	}
 	line += " [" + elapsed.String() + "]"
+	if lastEvent != "" {
+		if r := []rune(lastEvent); len(r) > 60 {
+			lastEvent = string(r[:57]) + "..."
+		}
+		line += " last: " + lastEvent
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()

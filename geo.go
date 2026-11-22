@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -61,7 +60,7 @@ func (g *geoClient) resolve(ctx context.Context, ips []string) map[string]string
 			end = len(unique)
 		}
 		if g.prog != nil {
-			g.prog.set("resolving proxy countries", fmt.Sprintf("%d/%d addresses", end, len(unique)))
+			g.prog.setProgress("resolving proxy countries", int64(end), int64(len(unique)), "addresses")
 		}
 		g.lookupBatch(ctx, unique[start:end])
 	}

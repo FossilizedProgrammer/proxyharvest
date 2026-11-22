@@ -288,7 +288,7 @@ func testCandidates(ctx context.Context, candidates []Candidate, probes []string
 				alive.Add(1)
 				results <- Result{Candidate: cand, Latency: latency}
 			}
-			prog.set("testing proxies", fmt.Sprintf("%d/%d tested, %d alive", n, len(candidates), alive.Load()))
+			prog.setProgress("testing proxies", n, int64(len(candidates)), fmt.Sprintf("%d alive", alive.Load()))
 			if n%250 == 0 {
 				log.Printf("tested %d/%d (alive %d)", n, len(candidates), alive.Load())
 			}

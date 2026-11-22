@@ -100,7 +100,7 @@ func fetchJobs(ctx context.Context, jobs []fetchJob, upstream *url.URL, concurre
 		done      atomic.Int64
 		harvested atomic.Int64
 	)
-	prog.set("downloading source lists", fmt.Sprintf("0/%d requests", len(jobs)))
+	prog.setProgress("downloading source lists", 0, int64(len(jobs)), "0 candidates")
 	for i, job := range jobs {
 		wg.Add(1)
 		go func(i int, job fetchJob) {
@@ -111,13 +111,15 @@ func fetchJobs(ctx context.Context, jobs []fetchJob, upstream *url.URL, concurre
 			cands := 0
 			if err != nil {
 				results[i] = jobOutcome{job: job, err: err}
+				prog.note(fmt.Sprintf("%s: failed", job.source.Name))
 			} else {
 				results[i] = jobOutcome{job: job, candidates: job.request.Parse(body)}
 				cands = len(results[i].candidates)
+				prog.note(fmt.Sprintf("%s: %d candidates", job.source.Name, cands))
 			}
 			n := done.Add(1)
 			total := harvested.Add(int64(cands))
-			prog.set("downloading source lists", fmt.Sprintf("%d/%d requests, %d candidates", n, len(jobs), total))
+			prog.setProgress("downloading source lists", n, int64(len(jobs)), fmt.Sprintf("%d candidates", total))
 		}(i, job)
 	}
 	wg.Wait()
@@ -140,7 +142,7 @@ func workingProxies(ctx context.Context, pool []Candidate, want, maxTries, concu
 		sem    = make(chan struct{}, concurrency)
 		wg     sync.WaitGroup
 	)
-	prog.set("checking harvested proxies", fmt.Sprintf("0/%d tried, 0 working", len(pool)))
+	prog.setProgress("checking harvested proxies", 0, int64(len(pool)), "0 working")
 	for _, cand := range pool {
 		if found.Load() >= int64(want) {
 			break
@@ -153,7 +155,7 @@ func workingProxies(ctx context.Context, pool []Candidate, want, maxTries, concu
 			if found.Load() >= int64(want) {
 				return
 			}
-			_, err := checkCandidate(ctx, cand, probe, timeout)
+			latency, err := checkCandidate(ctx, cand, probe, timeout)
 			n := tested.Add(1)
 			if err == nil {
 				mu.Lock()
@@ -161,10 +163,11 @@ func workingProxies(ctx context.Context, pool []Candidate, want, maxTries, concu
 					alive = append(alive, cand)
 					found.Add(1)
 					logf("bootstrap proxy works: %s", cand.URL())
+					prog.note(fmt.Sprintf("working %s (%s)", cand.URL(), latency.Round(time.Millisecond)))
 				}
 				mu.Unlock()
 			}
-			prog.set("checking harvested proxies", fmt.Sprintf("%d/%d tried, %d working", n, len(pool), found.Load()))
+			prog.setProgress("checking harvested proxies", n, int64(len(pool)), fmt.Sprintf("%d working", found.Load()))
 		}(cand)
 	}
 	wg.Wait()
@@ -182,7 +185,7 @@ func retryViaProxies(ctx context.Context, failed []jobOutcome, proxies []Candida
 		wg        sync.WaitGroup
 		sem       = make(chan struct{}, 4)
 	)
-	prog.set("recovering unreachable sources", fmt.Sprintf("0/%d requests via proxy", len(failed)))
+	prog.setProgress("recovering unreachable sources", 0, int64(len(failed)), "via proxy")
 	for _, outcome := range failed {
 		wg.Add(1)
 		go func(outcome jobOutcome) {
@@ -191,7 +194,7 @@ func retryViaProxies(ctx context.Context, failed []jobOutcome, proxies []Candida
 			defer func() { <-sem }()
 
 			defer func() {
-				prog.set("recovering unreachable sources", fmt.Sprintf("%d/%d requests via proxy", done.Add(1), len(failed)))
+				prog.setProgress("recovering unreachable sources", done.Add(1), int64(len(failed)), "via proxy")
 			}()
 
 			for _, proxy := range proxies {
@@ -205,6 +208,7 @@ func retryViaProxies(ctx context.Context, failed []jobOutcome, proxies []Candida
 				recovered++
 				mu.Unlock()
 				logf("recovered %s via %s (%d proxies)", outcome.job.source.Name, proxy.URL(), len(cands))
+				prog.note(fmt.Sprintf("recovered %s via %s", outcome.job.source.Name, proxy.URL()))
 				return
 			}
 			logf("could not reach %s even through proxy", outcome.job.source.Name)
