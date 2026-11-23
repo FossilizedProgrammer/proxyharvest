@@ -36,6 +36,42 @@ The binaries are static and need nothing at runtime. Releases are published auto
 
 `-country` takes a two-letter ISO code (e.g. `US`, `DE`, `IR`).
 
+## Inspecting and choosing sites
+
+Every site has a short key. To see all of them with the exact URLs they download:
+
+```bash
+./proxyharvest -list-sources
+```
+
+```
+# 11 built-in proxy-list sites (pass names to -sources)
+free-proxy-list.net  https://free-proxy-list.net/
+proxyscrape.com      https://api.proxyscrape.com/v4/free-proxy-list/get?...
+spys.me              https://spys.me/proxy.txt
+                     https://spys.me/socks.txt
+...
+```
+
+Use `-sources` to harvest from only the sites you pick (comma-separated):
+
+```bash
+# just two sites
+./proxyharvest -sources spys.me,geonode.com
+
+# everything except one (prefix ! or -)
+./proxyharvest -sources '!spys.me'
+
+# only SOCKS5 from one site
+./proxyharvest -sources spys.me -types socks5
+```
+
+An unknown name fails with a reminder to run `-list-sources`. The log also shows how many sites were selected:
+
+```
+proxyharvest: collecting proxies from 2 of 11 sites: spys.me, geonode.com (country=all, types=http)
+```
+
 ## Upstream proxy
 
 If direct access to the listed sites is blocked, pass an intermediate proxy with `-upstream`. It is used **only** to download the site lists (and the country lookup); the testing phase still runs from your direct connection, and the upstream proxy is never in the path of any test.
@@ -82,7 +118,8 @@ Separate the addresses with commas; if the scheme is omitted `https://` is assum
 | `-upstream` | — | upstream proxy used only to download the site lists (tests never pass through it) |
 | `-no-retry` | — | drop unreachable sources instead of retrying them through harvested proxies |
 | `-require` | `www.facebook.com,www.youtube.com` | every proxy must open these sites over HTTPS; `none` — disable |
-| `-list-sources` | — | print the known proxy-list sites |
+| `-sources` | all | harvest only from these sites (names from `-list-sources`); prefix `!name` to exclude one |
+| `-list-sources` | — | print the known proxy-list sites and their URLs |
 
 ## Progress display
 

@@ -1,3 +1,6 @@
+# Editor/agent metadata
+.freebuff/
+
 # Build output
 proxyharvest
 proxyharvest.exe

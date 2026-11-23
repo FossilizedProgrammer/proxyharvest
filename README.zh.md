@@ -36,6 +36,33 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o proxyharvest .
 
 `-country` 接受两位 ISO 国家代码（如 `US`、`DE`、`IR`）。
 
+## 查看与选择网站
+
+每个网站都有短名称。查看全部网站及其下载地址：
+
+```bash
+./proxyharvest -list-sources
+```
+
+用 `-sources` 只从选定的网站收集代理（逗号分隔）：
+
+```bash
+# 只用两个网站
+./proxyharvest -sources spys.me,geonode.com
+
+# 排除一个网站（前缀 ! 或 -）
+./proxyharvest -sources '!spys.me'
+
+# 只从一个网站取 SOCKS5
+./proxyharvest -sources spys.me -types socks5
+```
+
+未知名称会报错并提示运行 `-list-sources`。日志中也会显示选中的网站数：
+
+```
+proxyharvest: collecting proxies from 2 of 11 sites: spys.me, geonode.com (country=all, types=http)
+```
+
 ## 上游代理
 
 如果到列表网站的直接访问被封，可用 `-upstream` 提供一个中间代理。它 **只** 用于下载网站列表（以及国家查询）；代理测试阶段始终使用直连，上游代理不参与任何测试。
@@ -82,7 +109,8 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o proxyharvest .
 | `-upstream` | — | 仅用于下载网站列表的上游代理（代理测试不经它） |
 | `-no-retry` | — | 跳过不可达网站，不用收集到的代理去重试 |
 | `-require` | `www.facebook.com,www.youtube.com` | 每个代理必须按 HTTPS 打开这些网站；`none` — 关闭 |
-| `-list-sources` | — | 显示已知网站列表 |
+| `-sources` | 全部 | 仅从这些网站收集（名称见 `-list-sources`）；`!name` 排除某个网站 |
+| `-list-sources` | — | 显示已知网站及其地址 |
 
 ## 进度显示
 

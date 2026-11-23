@@ -30,6 +30,42 @@ go build -o proxyharvest .
 
 `-country` کد دوحرفی ISO می‌گیرد (مثل `US`، `DE`، `IR`).
 
+## دیدن و انتخاب سایت‌ها
+
+هر سایت با یک نام کوتاه شناخته می‌شود. برای دیدن فهرست کامل همراه آدرس‌هایی که دانلود می‌شوند:
+
+```bash
+./proxyharvest -list-sources
+```
+
+```
+# 11 built-in proxy-list sites (pass names to -sources)
+free-proxy-list.net  https://free-proxy-list.net/
+proxyscrape.com      https://api.proxyscrape.com/v4/free-proxy-list/get?...
+spys.me              https://spys.me/proxy.txt
+                     https://spys.me/socks.txt
+...
+```
+
+با `-sources` فقط از سایت‌های دلخواه پروکسی بگیرید (نام‌ها را با کاما جدا کنید):
+
+```bash
+# فقط دو سایت
+./proxyharvest -sources spys.me,geonode.com
+
+# همه به‌جز یکی (پیشوند ! یا -)
+./proxyharvest -sources '!spys.me'
+
+# فقط SOCKS5 از یک سایت
+./proxyharvest -sources spys.me -types socks5
+```
+
+نام ناشناخته باعث خطا می‌شود و ابزار فهرست نام‌های مجاز را یادآوری می‌کند. در لاگ هم مشخص است که چند سایت از کل انتخاب شده:
+
+```
+proxyharvest: collecting proxies from 2 of 11 sites: spys.me, geonode.com (country=all, types=http)
+```
+
 ## پروکسی آپ‌استریم
 
 اگر دسترسی مستقیم به سایت‌های فهرست مسدود است، با `-upstream` یک پروکسی واسط بدهید. این پروکسی **فقط** برای دانلود فهرست سایت‌ها (و استعلام کشور) استفاده می‌شود؛ مرحلهٔ تست همچنان از اتصال مستقیم انجام می‌شود و پروکسی آپ‌استریم در مسیر هیچ تستی قرار نمی‌گیرد.
@@ -76,7 +112,8 @@ go build -o proxyharvest .
 | `-upstream` | — | پروکسی آپ‌استریم فقط برای دانلود سایت‌ها (تست پروکسی‌ها از آن عبور نمی‌کند) |
 | `-no-retry` | — | سایت‌های در دسترس‌نبوده را رها کن و از پروکسی برای بازیابی‌شان استفاده نکن |
 | `-require` | `www.facebook.com,www.youtube.com` | هر پروکسی باید این سایت‌ها را با HTTPS باز کند؛ `none` برای غیرفعال‌کردن |
-| `-list-sources` | — | نمایش سایت‌های شناخته‌شده |
+| `-sources` | همه | فقط سایت‌های نام‌برده (نام‌ها از `-list-sources`)؛ `!name` برای حذف یک سایت |
+| `-list-sources` | — | نمایش سایت‌های شناخته‌شده و آدرس‌هایشان |
 
 ## نمایش پیشرفت
 

@@ -36,6 +36,33 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o proxyharvest .
 
 `-country` принимает двухбуквенный ISO-код (например `US`, `DE`, `IR`).
 
+## Просмотр и выбор сайтов
+
+У каждого сайта есть короткое имя. Посмотреть все сайты и точные адреса загрузки:
+
+```bash
+./proxyharvest -list-sources
+```
+
+Используйте `-sources`, чтобы собирать прокси только с выбранных сайтов (через запятую):
+
+```bash
+# только два сайта
+./proxyharvest -sources spys.me,geonode.com
+
+# все, кроме одного (префикс ! или -)
+./proxyharvest -sources '!spys.me'
+
+# только SOCKS5 с одного сайта
+./proxyharvest -sources spys.me -types socks5
+```
+
+Неизвестное имя даёт ошибку с напоминанием о `-list-sources`. В логе видно, сколько сайтов выбрано:
+
+```
+proxyharvest: collecting proxies from 2 of 11 sites: spys.me, geonode.com (country=all, types=http)
+```
+
 ## Upstream-прокси
 
 Если прямой доступ к сайтам из списка заблокирован, передайте промежуточный прокси через `-upstream`. Он используется **только** для скачивания списков сайтов (и запроса страны); этап тестирования всегда идёт с прямого соединения, и upstream-прокси не участвует ни в одном тесте.
@@ -82,7 +109,8 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o proxyharvest .
 | `-upstream` | — | upstream-прокси только для скачивания сайтов (тесты через него не идут) |
 | `-no-retry` | — | бросить недоступные сайты и не восстанавливать их через собранные прокси |
 | `-require` | `www.facebook.com,www.youtube.com` | каждый прокси должен открыть эти сайты по HTTPS; `none` — отключить |
-| `-list-sources` | — | показать известные сайты |
+| `-sources` | все | собирать только с этих сайтов (имена из `-list-sources`); `!name` — исключить сайт |
+| `-list-sources` | — | показать известные сайты и их адреса |
 
 ## Отображение прогресса
 

@@ -33,6 +33,7 @@ type options struct {
 	excludeCC    string
 	verbose      bool
 	listSources  bool
+	sources      string
 }
 
 type Result struct {
@@ -65,19 +66,18 @@ func run() error {
 	flag.StringVar(&opts.excludeCC, "exclude-countries", "IR,RU,CN,KP", "comma-separated ISO country codes to drop (use \"none\" to keep every country)")
 	flag.BoolVar(&opts.noRetry, "no-retry", false, "skip unreachable sites instead of retrying them through harvested proxies")
 	flag.BoolVar(&opts.verbose, "v", false, "verbose logging")
-	flag.BoolVar(&opts.listSources, "list-sources", false, "print known proxy-list sites and exit")
+	flag.BoolVar(&opts.listSources, "list-sources", false, "print known proxy-list sites with their URLs and exit")
+	flag.StringVar(&opts.sources, "sources", "", "comma-separated sites to harvest from (names shown by -list-sources); default all, prefix a name with ! to exclude it")
 	flag.Parse()
-
-	if opts.listSources {
-		for _, s := range registry {
-			fmt.Printf("%-22s %s\n", s.Key, s.Name)
-		}
-		return nil
-	}
 
 	types, err := parseTypes(opts.types)
 	if err != nil {
 		return err
+	}
+
+	if opts.listSources {
+		printSources(types)
+		return nil
 	}
 	country := strings.ToUpper(strings.TrimSpace(opts.country))
 	if country != "" && (len(country) != 2 || !isLetters(country)) {
@@ -122,14 +122,9 @@ func run() error {
 
 	// منابع از رجیستری داخل کد می‌آیند — فایل sites دیگر وجود ندارد و
 	// برای شروع کار به هیچ فایلی نیاز نیست.
-	sources := make([]Source, 0, len(registry))
-	seenSources := map[string]bool{}
-	for _, src := range registry {
-		if seenSources[src.Key] {
-			continue
-		}
-		seenSources[src.Key] = true
-		sources = append(sources, src)
+	sources, err := selectSources(opts.sources)
+	if err != nil {
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -145,8 +140,13 @@ func run() error {
 		return fmt.Errorf("no fetchable sources for the selected proxy types")
 	}
 
-	log.Printf("collecting proxies from %d sites (country=%s, types=%s)",
-		len(sources), orAll(country), strings.Join(sortedTypes(types), ","))
+	if len(sources) == len(registry) {
+		log.Printf("collecting proxies from %d sites (country=%s, types=%s)",
+			len(sources), orAll(country), strings.Join(sortedTypes(types), ","))
+	} else {
+		log.Printf("collecting proxies from %d of %d sites: %s (country=%s, types=%s)",
+			len(sources), len(registry), sourceKeys(sources), orAll(country), strings.Join(sortedTypes(types), ","))
+	}
 	if upstream != nil {
 		log.Printf("downloading site lists through upstream proxy %s", upstream.Redacted())
 	}

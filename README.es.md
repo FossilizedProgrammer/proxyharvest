@@ -36,6 +36,33 @@ Los binarios son estáticos y no requieren nada al ejecutarse. Las releases se p
 
 `-country` acepta un código ISO de dos letras (por ejemplo `US`, `DE`, `IR`).
 
+## Ver y elegir sitios
+
+Cada sitio tiene un nombre corto. Para ver todos con las URLs exactas que descarga:
+
+```bash
+./proxyharvest -list-sources
+```
+
+Usa `-sources` para obtener proxies solo de los sitios que elijas (separados por comas):
+
+```bash
+# solo dos sitios
+./proxyharvest -sources spys.me,geonode.com
+
+# todos excepto uno (prefijo ! o -)
+./proxyharvest -sources '!spys.me'
+
+# solo SOCKS5 de un sitio
+./proxyharvest -sources spys.me -types socks5
+```
+
+Un nombre desconocido da error y recuerda ejecutar `-list-sources`. El log muestra cuántos sitios se eligieron:
+
+```
+proxyharvest: collecting proxies from 2 of 11 sites: spys.me, geonode.com (country=all, types=http)
+```
+
 ## Proxy upstream
 
 Si el acceso directo a los sitios listados está bloqueado, pasa un proxy intermedio con `-upstream`. Se usa **solo** para descargar las listas de sitios (y la consulta de país); la fase de pruebas siempre se realiza desde tu conexión directa y el proxy upstream no participa en ninguna prueba.
@@ -82,7 +109,8 @@ Separa las direcciones con comas; si no indicas el esquema se asume `https://`. 
 | `-upstream` | — | proxy upstream solo para descargar los sitios (las pruebas no pasan por él) |
 | `-no-retry` | — | abandonar los sitios inaccesibles en vez de recuperarlos vía proxies |
 | `-require` | `www.facebook.com,www.youtube.com` | cada proxy debe abrir estos sitios por HTTPS; `none` — desactivar |
-| `-list-sources` | — | mostrar los sitios conocidos |
+| `-sources` | todos | usar solo estos sitios (nombres de `-list-sources`); `!name` excluye uno |
+| `-list-sources` | — | mostrar los sitios conocidos y sus URLs |
 
 ## Progreso
 

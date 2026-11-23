@@ -326,6 +326,124 @@ var sourceAliases = map[string]string{
 	"proxyscrape.com": "proxyscrape.com",
 }
 
+// printSources lists every built-in site together with the URLs it fetches,
+// so users know what -sources accepts and where the proxies come from.
+func printSources(types TypeSet) {
+	fmt.Printf("# %d built-in proxy-list sites (pass names to -sources)\n", len(registry))
+	width := 0
+	for _, s := range registry {
+		if len(s.Key) > width {
+			width = len(s.Key)
+		}
+	}
+	for _, s := range registry {
+		urls := make([]string, 0, 4)
+		for _, req := range s.Requests("", types) {
+			urls = append(urls, req.URL)
+		}
+		label := fmt.Sprintf("%-*s", width, s.Key)
+		if len(urls) == 0 {
+			fmt.Printf("%s  (no request for the selected -types)\n", label)
+			continue
+		}
+		fmt.Printf("%s  %s\n", label, urls[0])
+		for _, u := range urls[1:] {
+			fmt.Printf("%s  %s\n", strings.Repeat(" ", width), u)
+		}
+	}
+}
+
+// sourceKeys joins site keys for log lines.
+func sourceKeys(sources []Source) string {
+	keys := make([]string, 0, len(sources))
+	for _, s := range sources {
+		keys = append(keys, s.Key)
+	}
+	return strings.Join(keys, ", ")
+}
+
+// selectSources maps a comma-separated -sources value (source keys, aliases or
+// display names) to registry entries. Empty or "all" means every source; a
+// "!" or "-" prefix excludes a source instead of adding it.
+func selectSources(raw string) ([]Source, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.EqualFold(raw, "all") {
+		return append([]Source(nil), registry...), nil
+	}
+
+	pick := map[string]bool{}
+	selected := map[string]bool{}
+	for _, part := range strings.Split(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		exclude := false
+		if strings.HasPrefix(part, "!") || strings.HasPrefix(part, "-") {
+			exclude = true
+			part = strings.TrimSpace(part[1:])
+		}
+		key, ok := resolveSourceKey(part)
+		if !ok {
+			return nil, fmt.Errorf("unknown source %q (see -list-sources for the valid names)", part)
+		}
+		if exclude {
+			pick[key] = false
+		} else if _, set := pick[key]; !set {
+			pick[key] = true
+		}
+	}
+	if len(pick) == 0 {
+		return nil, fmt.Errorf("-sources is empty")
+	}
+
+	for _, s := range registry {
+		include, set := pick[s.Key]
+		if !set {
+			include = !hasPositivePick(pick)
+		}
+		if include && !selected[s.Key] {
+			selected[s.Key] = true
+		}
+	}
+
+	var out []Source
+	for _, s := range registry {
+		if selected[s.Key] {
+			out = append(out, s)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no sources left after applying -sources")
+	}
+	return out, nil
+}
+
+func hasPositivePick(pick map[string]bool) bool {
+	for _, v := range pick {
+		if v {
+			return true
+		}
+	}
+	return false
+}
+
+// resolveSourceKey normalizes a user-supplied source name to a registry key.
+func resolveSourceKey(name string) (string, bool) {
+	n := strings.ToLower(strings.TrimSpace(name))
+	n = strings.TrimSuffix(n, "/")
+	n = strings.TrimPrefix(n, "www.")
+	if alias, ok := sourceAliases[n]; ok {
+		n = alias
+	}
+	for _, s := range registry {
+		if strings.ToLower(s.Key) == n || strings.ToLower(s.Name) == n {
+			return s.Key, true
+		}
+	}
+	return "", false
+}
+
 func sourceForHost(host string) Source {
 	host = strings.ToLower(strings.TrimSuffix(host, "."))
 	if alias, ok := sourceAliases[host]; ok {
@@ -350,4 +468,3 @@ func sourceForHost(host string) Source {
 	}
 	return generic
 }
-
